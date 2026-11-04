@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CreatorFlow
 
-## Getting Started
+CreatorFlow is a local-first influencer discovery and outreach MVP for agency teams. It uses fictional sample profiles and stores campaign, shortlist, and outreach data in the current browser.
 
-First, run the development server:
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Run `npm run build` for a production build and `npm run lint` for ESLint.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## MVP features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Discover 54 fictional Instagram creator profiles by niche, location, followers, engagement, name, or username.
+- Add creators to a persistent shortlist and connect them to campaigns.
+- Create, edit, track, and delete campaigns.
+- Generate and edit personalized outreach message drafts, copy them, and manually track their statuses.
+- Keep all sample data and working records in `src/data/creators.json` and browser LocalStorage.
 
-## Learn More
+## Demo limitations
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The creator directory is fictional demonstration data; contact emails are not fabricated. The message generator is a local template, not an AI integration. Instagram messages must be sent manually. CreatorFlow does not scrape Instagram or send email/DMs.
