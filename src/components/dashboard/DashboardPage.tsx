@@ -11,7 +11,6 @@ import {
   Send,
   UsersRound,
 } from "lucide-react";
-import creators from "@/data/creators.json";
 import type { Creator } from "@/types/creator";
 import { useAppData } from "@/components/AppProvider";
 import { CreatorCard } from "@/components/creators/CreatorCard";
@@ -19,31 +18,39 @@ import { CreatorDetails } from "@/components/creators/CreatorDetails";
 import { PageHeading } from "@/components/layout/AppLayout";
 import { formatDate } from "@/lib/utils";
 import { useState } from "react";
-
-const creatorList = creators as Creator[];
+import { DemoDataNotice } from "@/components/creators/DemoDataNotice";
 
 export function DashboardPage() {
-  const { campaigns, shortlist, outreach, toggleShortlist } = useAppData();
+  const { creators: creatorList, campaigns, shortlist, outreach, ready, resetWorkspace, toggleShortlist } = useAppData();
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const recentCreators = creatorList.slice(0, 3);
   const activeCampaigns = campaigns.filter((campaign) => campaign.status === "Active").length;
-  const sentOutreach = outreach.filter((item) => item.status === "Sent").length;
+  const sentOutreach = outreach.filter((item) => item.status === "Sent (Demo)").length;
   const latestCampaigns = campaigns.slice(0, 4);
   const activity = outreach.slice(0, 4);
+
+  async function resetDemoWorkspace() {
+    const confirmed = window.confirm(
+      "Reset this shared workspace? This permanently clears campaigns, shortlists, outreach drafts, notes, and message history for every workspace member. Creator profiles, templates, and email delivery records will remain.",
+    );
+    if (!confirmed) return;
+    await resetWorkspace();
+  }
 
   return (
     <div className="page-stack">
       <PageHeading
         eyebrow="YOUR CREATOR WORKSPACE"
-        title="Good morning, Jordan"
-        description="Here’s what’s happening across your creator partnerships."
+        title="Welcome to CreatorFlow"
+        description="A local demo workspace for discovering creators and organizing outreach."
         action={<Link className="button button-primary" href="/campaigns?new=1"><Plus size={17} /> Create campaign</Link>}
       />
+      <DemoDataNotice count={creatorList.length} demoCount={creatorList.filter((creator) => creator.dataSource === "Demo Dataset").length} />
       <section className="welcome-strip">
         <div className="welcome-copy">
-          <div className="welcome-overline"><span className="welcome-spark"><UsersRound size={15} /></span> YOUR CREATOR WORKSPACE</div>
-          <h2>Find creators who make<br />your brand <em>feel like itself.</em></h2>
-          <p>Discover standout voices, build meaningful partnerships, and keep every campaign moving.</p>
+          <div className="welcome-overline"><span className="welcome-spark"><UsersRound size={15} /></span> START WITH A SIMPLE WORKFLOW</div>
+          <h2>Discover. Shortlist.<br /><em>Start a conversation.</em></h2>
+          <p>Explore fictional sample profiles, organize a campaign, and prepare creator-specific outreach drafts.</p>
           <Link className="button button-light" href="/discover">Discover creators <ArrowRight size={16} /></Link>
         </div>
         <div className="welcome-art" aria-hidden="true">
@@ -54,10 +61,22 @@ export function DashboardPage() {
         </div>
       </section>
       <section className="stats-grid">
-        <StatCard label="Total creators" value={creatorList.length.toString()} note="Curated demo profiles" icon={<UsersRound size={18} />} />
+        <StatCard label="Total creators" value={creatorList.length.toString()} note="Demo and user-added profiles" icon={<UsersRound size={18} />} />
         <StatCard label="Active campaigns" value={String(activeCampaigns)} note={`${campaigns.length} total campaigns`} icon={<CheckCircle2 size={18} />} accent="green" />
         <StatCard label="Shortlisted creators" value={String(shortlist.length)} note="Ready for a campaign" icon={<Clock3 size={18} />} accent="purple" />
-        <StatCard label="Outreach sent" value={String(sentOutreach)} note={`${outreach.length} total messages`} icon={<Send size={18} />} accent="orange" />
+        <StatCard label="Sent status" value={String(sentOutreach)} note="Manual/demo status only" icon={<Send size={18} />} accent="orange" />
+      </section>
+      <section className="getting-started panel">
+        <div className="getting-started-heading">
+          <div><h2>Quick start</h2><p>Try the core workflow with sample creators. No setup is needed.</p></div>
+          <button className="button button-secondary button-small" onClick={resetDemoWorkspace} disabled={!ready}>Reset workspace data</button>
+        </div>
+        <div className="getting-started-steps">
+          <Link href="/discover"><span>1</span><div><strong>Discover creators</strong><small>Filter profiles and add a few to your shortlist.</small></div><ArrowRight size={15} /></Link>
+          <Link href="/campaigns?new=1"><span>2</span><div><strong>Create a campaign</strong><small>Set a brand, niche, location, and creator target.</small></div><ArrowRight size={15} /></Link>
+          <Link href="/shortlist"><span>3</span><div><strong>Prepare outreach</strong><small>Assign creators to the campaign and edit their drafts.</small></div><ArrowRight size={15} /></Link>
+        </div>
+        <p className="getting-started-note">Workspace reset clears campaigns, shortlist, and outreach notes/drafts for all members. It preserves creator profiles, templates, and server-side email delivery history.</p>
       </section>
       <div className="dashboard-columns">
         <section className="panel recent-campaigns-panel">
@@ -86,7 +105,7 @@ export function DashboardPage() {
       </div>
       <section className="panel discovered-panel">
         <div className="panel-heading"><div><h2>Recently discovered creators</h2><p>A few profiles from your sample directory</p></div><Link className="subtle-link" href="/discover">Explore all creators <ArrowUpRight size={15} /></Link></div>
-        <div className="creator-grid dashboard-creator-grid">{recentCreators.map((creator) => <CreatorCard key={creator.id} creator={creator} shortlisted={shortlist.includes(creator.id)} onToggleShortlist={() => toggleShortlist(creator.id)} onView={() => setSelectedCreator(creator)} compact />)}</div>
+        {recentCreators.length ? <div className="creator-grid dashboard-creator-grid">{recentCreators.map((creator) => <CreatorCard key={creator.id} creator={creator} shortlisted={shortlist.includes(creator.id)} onToggleShortlist={() => toggleShortlist(creator.id)} onView={() => setSelectedCreator(creator)} compact />)}</div> : <div className="empty-inline"><strong>No creator profiles</strong><span>Add a creator in Discover to start building your directory.</span><Link className="text-button" href="/discover">Open creator directory <ArrowRight size={14} /></Link></div>}
       </section>
       {selectedCreator && <CreatorDetails creator={selectedCreator} onClose={() => setSelectedCreator(null)} isShortlisted={shortlist.includes(selectedCreator.id)} onToggleShortlist={() => toggleShortlist(selectedCreator.id)} />}
     </div>

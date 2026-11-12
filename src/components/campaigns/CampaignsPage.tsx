@@ -7,15 +7,12 @@ import { useAppData } from "@/components/AppProvider";
 import { PageHeading } from "@/components/layout/AppLayout";
 import { CampaignForm, type CampaignInput } from "@/components/campaigns/CampaignForm";
 import type { Campaign, CampaignStatus } from "@/types/campaign";
-import creators from "@/data/creators.json";
-import type { Creator } from "@/types/creator";
 import { formatCount, formatDate } from "@/lib/utils";
 
-const creatorDirectory = creators as Creator[];
 const statusOrder: CampaignStatus[] = ["Draft", "Active", "Completed"];
 
 export function CampaignsPage() {
-  const { campaigns, outreach, createCampaign, updateCampaign, deleteCampaign, updateCampaignStatus } = useAppData();
+  const { creators: creatorDirectory, campaigns, outreach, createCampaign, updateCampaign, deleteCampaign, updateCampaignStatus } = useAppData();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Campaign | undefined>();
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -27,16 +24,19 @@ export function CampaignsPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  function saveCampaign(data: CampaignInput) {
-    if (editing) updateCampaign({ ...editing, ...data });
-    else createCampaign(data);
+  async function saveCampaign(data: CampaignInput) {
+    const saved = editing
+      ? await updateCampaign({ ...editing, ...data })
+      : await createCampaign(data);
+    if (!saved) return false;
     setFormOpen(false);
     setEditing(undefined);
+    return true;
   }
 
-  function removeCampaign(campaign: Campaign) {
+  async function removeCampaign(campaign: Campaign) {
     if (!window.confirm(`Delete “${campaign.name}”? This cannot be undone.`)) return;
-    deleteCampaign(campaign.id);
+    await deleteCampaign(campaign.id);
   }
 
   return (
@@ -46,7 +46,7 @@ export function CampaignsPage() {
         <SummaryItem label="All campaigns" value={campaigns.length} />
         <SummaryItem label="Active" value={campaigns.filter((item) => item.status === "Active").length} />
         <SummaryItem label="Creators connected" value={new Set(campaigns.flatMap((item) => item.creatorIds)).size} />
-        <div className="campaign-summary-note">All campaign data is saved in this browser.</div>
+        <div className="campaign-summary-note">Campaign data is shared with authorized workspace members.</div>
       </div>
       <div className="section-title-row"><div><h2>Your campaigns <span>{campaigns.length}</span></h2><p>A clear view of every partnership in motion</p></div></div>
       {campaigns.length ? <div className="campaign-grid">

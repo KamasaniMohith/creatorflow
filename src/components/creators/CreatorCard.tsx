@@ -17,16 +17,15 @@ export function CreatorCard({
   onView: () => void;
   compact?: boolean;
 }) {
-  const initials = creator.name.split(" ").map((part) => part[0]).slice(0, 2).join("");
   return (
     <article className={`creator-card ${compact ? "creator-card-compact" : ""}`}>
       <div className="creator-card-top">
-        <div className={`creator-avatar avatar-${creator.niche.toLowerCase()}`}>{initials}</div>
+        <div className={`creator-avatar avatar-${creator.niche.toLowerCase()}`}>{creator.avatar}</div>
         <button className={`save-button ${shortlisted ? "save-active" : ""}`} onClick={onToggleShortlist} aria-label={shortlisted ? "Remove from shortlist" : "Add to shortlist"}>
           <Heart size={17} fill={shortlisted ? "currentColor" : "none"} />
         </button>
       </div>
-      <div className="creator-card-name"><h3>{creator.name}</h3><span className="demo-pill">DEMO</span></div>
+      <div className="creator-card-name"><h3>{creator.name}</h3><span className="demo-pill">{creator.dataSource === "Demo Dataset" ? "DEMO" : "USER-ADDED"}</span></div>
       <a className="creator-handle" href={creator.profileUrl} target="_blank" rel="noreferrer">@{creator.username}</a>
       <div className="creator-tags"><span className="tag">{creator.niche}</span><span className="location-tag"><MapPin size={12} />{creator.location}</span></div>
       <div className="creator-metrics">
@@ -35,7 +34,7 @@ export function CreatorCard({
         <div><Eye size={15} /><strong>{formatCount(creator.averageViews)}</strong><span>Avg. views</span></div>
       </div>
       <div className="creator-card-footer">
-        <span className={`contact-label ${creator.email ? "" : "contact-muted"}`}>{creator.email ? "Email available" : "Instagram contact"}</span>
+        <span className={`contact-label ${creator.email ? "" : "contact-muted"}`}>{creator.email ? "Demo email only" : "No demo email"}</span>
         <button className="text-button" onClick={onView}>View profile <span>→</span></button>
       </div>
     </article>

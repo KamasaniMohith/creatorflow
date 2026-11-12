@@ -14,7 +14,7 @@ export function CampaignForm({
 }: {
   initial?: Campaign;
   onClose: () => void;
-  onSave: (campaign: CampaignInput) => void;
+  onSave: (campaign: CampaignInput) => Promise<boolean>;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [brand, setBrand] = useState(initial?.brand ?? "");
@@ -25,16 +25,27 @@ export function CampaignForm({
   const [description, setDescription] = useState(initial?.description ?? "");
   const [status, setStatus] = useState<CampaignStatus>(initial?.status ?? "Draft");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const min = Number(minFollowers);
     const max = Number(maxFollowers);
-    if (min < 0 || max < min) {
+    if (name.trim().length < 2 || brand.trim().length < 2) {
+      setError("Enter a campaign name and brand name with at least two characters.");
+      return;
+    }
+    if (
+      !Number.isSafeInteger(min) ||
+      !Number.isSafeInteger(max) ||
+      min < 0 ||
+      max < min
+    ) {
       setError("Maximum followers must be greater than or equal to the minimum.");
       return;
     }
-    onSave({
+    setSaving(true);
+    const saved = await onSave({
       name: name.trim(),
       brand: brand.trim(),
       niche,
@@ -45,6 +56,8 @@ export function CampaignForm({
       status,
       creatorIds: initial?.creatorIds ?? [],
     });
+    setSaving(false);
+    if (!saved) setError("The campaign could not be saved. Review the workspace error and try again.");
   }
 
   return (
@@ -61,7 +74,7 @@ export function CampaignForm({
           <label className="field form-full"><span>Campaign description</span><textarea rows={3} maxLength={600} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Share the goals, story, and details creators should know..." /></label>
         </div>
         {error && <p className="form-error" role="alert">{error}</p>}
-        <div className="modal-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancel</button><button type="submit" className="button button-primary">{initial ? "Save changes" : "Create campaign"}</button></div>
+        <div className="modal-actions"><button type="button" className="button button-secondary" onClick={onClose} disabled={saving}>Cancel</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? "Saving..." : initial ? "Save changes" : "Create campaign"}</button></div>
       </form>
     </Modal>
   );

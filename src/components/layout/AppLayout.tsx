@@ -5,9 +5,6 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import {
   BarChart3,
-  Bell,
-  ChevronDown,
-  CircleHelp,
   Compass,
   LayoutDashboard,
   Menu,
@@ -19,6 +16,10 @@ import {
   X,
 } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { useWorkspace } from "@/components/WorkspaceProvider";
+import { useAppData } from "@/components/AppProvider";
+import { LocalDataMigration } from "@/components/workspaces/LocalDataMigration";
 
 const primaryLinks = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -39,9 +40,45 @@ const pageTitles: Record<string, string> = {
 export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, signOut } = useAuth();
+  const { error: appError, clearError: clearAppError } = useAppData();
+  const {
+    activeWorkspace,
+    workspaces,
+    loading: workspacesLoading,
+    error: workspaceError,
+    selectWorkspace,
+  } = useWorkspace();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  if (
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/onboarding"
+  ) {
+    return children;
+  }
+
+  const displayName =
+    (typeof user?.user_metadata.display_name === "string" &&
+      user.user_metadata.display_name) ||
+    user?.email ||
+    "Account";
+
+  async function handleSignOut() {
+    setSignOutError(null);
+    try {
+      await signOut();
+      router.replace("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Unable to sign out.", error);
+      setSignOutError("Sign out failed. Please try again.");
+    }
+  }
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -63,9 +100,32 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <span>creator<span className="brand-light">flow</span></span>
         </Link>
         <div className="workspace-switcher">
-          <div className="workspace-avatar">S</div>
-          <div className="workspace-copy"><strong>Studio North</strong><span>Free workspace</span></div>
-          <ChevronDown size={15} />
+          <div className="workspace-avatar">
+            {activeWorkspace?.name.slice(0, 1).toUpperCase() ?? "C"}
+          </div>
+          <div className="workspace-copy">
+            {workspaces.length > 1 ? (
+              <select
+                aria-label="Select workspace"
+                className="max-w-full bg-transparent font-semibold"
+                onChange={(event) => selectWorkspace(event.target.value)}
+                value={activeWorkspace?.id ?? ""}
+              >
+                {workspaces.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <strong>{workspacesLoading ? "Loading workspace..." : activeWorkspace?.name ?? "Workspace"}</strong>
+            )}
+            <span>
+              {activeWorkspace
+                ? `${activeWorkspace.role} access`
+                : user?.email ?? "Workspace"}
+            </span>
+          </div>
         </div>
         <div className="sidebar-label">WORKSPACE</div>
         <nav className="sidebar-nav" aria-label="Main navigation">
@@ -88,17 +148,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <Link href="/discover">Explore creators <span>→</span></Link>
         </div>
         <div className="sidebar-bottom">
-          <button className="nav-link" onClick={() => window.alert("Settings are not part of this demo yet.")}>
-            <Settings size={18} /><span>Settings</span>
-          </button>
-          <button className="nav-link" onClick={() => window.alert("Help center is not part of this demo yet.")}>
-            <CircleHelp size={18} /><span>Help & support</span>
-          </button>
-          <div className="profile-row">
-            <div className="profile-avatar">JD</div>
-            <div className="profile-copy"><strong>Jordan Davis</strong><span>Agency admin</span></div>
-            <ChevronDown size={15} />
-          </div>
+          <Link className="nav-link" href="/outreach#integrations" onClick={() => setSidebarOpen(false)}>
+            <Settings size={18} /><span>Integration setup</span>
+          </Link>
+          {user && (
+            <div className="profile-row">
+              <div className="profile-avatar">{displayName.slice(0, 2).toUpperCase()}</div>
+              <div className="profile-copy"><strong>{displayName}</strong><span>Signed in</span></div>
+            </div>
+          )}
         </div>
       </aside>
       <div className="main-column">
@@ -111,16 +169,27 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <form className="global-search" onSubmit={submitSearch}>
               <Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search creators..." aria-label="Search creators" />
             </form>
-            <button className="icon-button notification-button" aria-label="Notifications" onClick={() => window.alert("You're all caught up.")}>
-              <Bell size={18} /><i />
-            </button>
             <div className="profile-menu-anchor">
-              <button className="topbar-avatar" aria-label="Open profile menu" aria-expanded={profileOpen} onClick={() => setProfileOpen((current) => !current)}>JD</button>
-              {profileOpen && <div className="profile-popover"><strong>Jordan Davis</strong><span>Agency admin</span><div className="profile-popover-note">Studio North · Demo workspace</div></div>}
+              <button className="topbar-avatar" aria-label="Open account menu" aria-expanded={profileOpen} onClick={() => setProfileOpen((current) => !current)}>{displayName.slice(0, 2).toUpperCase()}</button>
+              {profileOpen && <div className="profile-popover"><strong>{displayName}</strong><span>{user?.email}</span>{signOutError && <p role="alert">{signOutError}</p>}<button className="text-button" onClick={handleSignOut}>Sign out</button></div>}
             </div>
           </div>
         </header>
-        <main className="page-content">{children}</main>
+        <main className="page-content">
+          <LocalDataMigration />
+          {workspaceError && (
+            <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+              {workspaceError}
+            </p>
+          )}
+          {appError && (
+            <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+              <span>{appError}</span>
+              <button className="text-button" onClick={clearAppError}>Dismiss</button>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );
